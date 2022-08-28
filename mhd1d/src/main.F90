@@ -30,7 +30,7 @@ fmt1 = "(1x, 'Date ', i2.2, '/', i2.2, '/', i4.4, '; time ', &
 if(rank == 0)then
    call date_and_time(VALUES=values)
    write(*,fmt1) values(3), values(2), values(1), values(5:7)
-   !print*,'Running git version: ', VERSION
+   print*,'Running git version: ', VERSION
    print*,'Number of processes: ', nproc
 endif
 

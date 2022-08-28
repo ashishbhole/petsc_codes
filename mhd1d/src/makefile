@@ -1,5 +1,7 @@
 FC      = mpif90
-FFLAGS  = -O3 -fdefault-real-8 -I$(PETSC_DIR)/arch-linux-c-debug/include
+GIT_VERSION = $(shell git describe --abbrev=8 --dirty --always)
+FFLAGS  = -O3 -fdefault-real-8 -I$(PETSC_DIR)/arch-linux-c-debug/include \
+		-DVERSION=\"$(GIT_VERSION)\"
 LDFLAGS = -lpetsc -L$(PETSC_DIR)/arch-linux-c-debug/lib -L/usr/lib64
 
 SRC  = $(wildcard *.F90)
