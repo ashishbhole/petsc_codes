@@ -7,7 +7,7 @@ LDFLAGS = -lpetsc -L$(PETSC_DIR)/arch-linux-c-debug/lib -L/usr/lib64
 
 SRC  = $(wildcard *.F90)
 OBJ  = $(patsubst %.F90,%.o,$(SRC))
-MOD  = double.mod variables.mod
+MOD  = double.mod variables.mod read_write.mod auxillary_conditions.mod
 
 TARGET  = exe
 
@@ -20,8 +20,14 @@ double.mod: double.F90
 variables.mod: variables.F90 double.mod
 	$(FC) -c $(FFLAGS) variables.F90
 
+read_write.mod: read_write.F90 variables.mod double.mod
+	$(FC) -c $(FFLAGS) read_write.F90
+
+auxillary_conditions.mod: auxillary_conditions.F90 variables.mod double.mod
+	$(FC) -c $(FFLAGS) auxillary_conditions.F90
+
 %.o: %.F90 $(MOD)
 	$(FC) $(FFLAGS) -c -o $@ $<
 
 clean:
-	rm -f *.mod *.o $(OBJ) $(TARGET)
+	rm -f *.mod *.o $(OBJ) $(TARGET) *.dat
