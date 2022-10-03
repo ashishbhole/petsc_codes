@@ -1,18 +1,22 @@
+! solves linear 1D convection equation: u_t + c * u_x = 0 for periodic boundary conditions:
+! using finite difference methods, PETSc DMDA and time stepping.
+! written by: Ashish Bhole.
 program main
 ! need to include petsc files as well as use modules
 #include <petsc/finclude/petscsys.h>
 #include <petsc/finclude/petscdm.h>
 #include <petsc/finclude/petscdmda.h>
-#include <petsc/finclude/petscvec.h>
+#include <petsc/finclude/petscts.h>
 use petscsys
 use petscdm
 use petscdmda
-use petscvec
+use petscts
 ! add modules here
 use double
 use variables
 use auxillary_conditions
 use read_write
+use solve
 !use fdm
 implicit none
 ! petsc datatypes
@@ -23,6 +27,8 @@ real(dp)           :: runtime
 character(len=128) :: fmt1, fmt2, fmt3, fmt4
 integer            :: values(8)
 integer            :: i, iter
+type(grid)         :: g
+type(tsdata)       :: ctx
 
 call PetscInitialize(PETSC_NULL_CHARACTER, ierr) 
 if(ierr /= 0) stop "PETSc not intialized"
@@ -42,60 +48,98 @@ endif
 
 ! Creates an object that will manage the communication of one-dimensional regular array data
 ! that is distributed across some processors. 
-call DMDACreate1d(PETSC_COMM_WORLD, DM_BOUNDARY_PERIODIC, Nx, nvar, stencil_width, &
+call DMDACreate1d(PETSC_COMM_WORLD, DM_BOUNDARY_PERIODIC, ctx%g%Np, 1, stencil_width, &
                   PETSC_NULL_INTEGER, da, ierr) ; CHKERRQ(ierr)
 call DMSetFromOptions(da, ierr) ; CHKERRQ(ierr)
 call DMSetUp(da, ierr); CHKERRQ(ierr)
-call DMCreateGlobalVector(da, xg, ierr); CHKERRQ(ierr)
+call DMCreateGlobalVector(da, ctx%g%xg, ierr); CHKERRQ(ierr)
 call DMCreateGlobalVector(da, ug, ierr); CHKERRQ(ierr)
 ! Returns the global (x,y,z) indices of the lower left corner and size of the local region, excluding ghost points.
-call DMDAGetCorners(da, ibeg, PETSC_NULL_INTEGER,PETSC_NULL_INTEGER, nloc, &
+call DMDAGetCorners(da, ctx%g%ibeg, PETSC_NULL_INTEGER,PETSC_NULL_INTEGER, ctx%g%nloc, &
                     PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, ierr)
-CHKERRQ(ierr)            
-call VecDuplicate(ug, xg, ierr); CHKERRQ(ierr)
-dx = (xmax - xmin) / dble(Nx)
-do i = ibeg, ibeg+nloc-1
-   xp = i*dx ; loc = i
+CHKERRQ(ierr)
+! This is used to control no of grid points from command line
+call DMDAGetInfo(da, PETSC_NULL_INTEGER, ctx%g%Np, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, &
+        PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, &
+        PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, &
+        PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, ierr)
+CHKERRQ(ierr)
+
+! setting equidistant grid and initial condition on it.
+ctx%g%dx = (ctx%g%xmax - ctx%g%xmin) / dble(ctx%g%Np)
+do i = ctx%g%ibeg, ctx%g%ibeg+ctx%g%nloc-1
+   xp = i*ctx%g%dx ; loc = i
    call initial_condition(xp, fun)
-   call VecSetValues(xg, one, loc, xp, INSERT_VALUES, ierr); CHKERRQ(ierr)
+   call VecSetValues(ctx%g%xg, one, loc, xp, INSERT_VALUES, ierr); CHKERRQ(ierr)
    call VecSetValues(ug, one, loc, fun, INSERT_VALUES, ierr);   CHKERRQ(ierr)
 enddo
-call VecAssemblyBegin(xg, ierr);  CHKERRQ(ierr)
-call VecAssemblyEnd(xg, ierr);    CHKERRQ(ierr)
+call VecAssemblyBegin(ctx%g%xg, ierr);  CHKERRQ(ierr)
+call VecAssemblyEnd(ctx%g%xg, ierr);    CHKERRQ(ierr)
 call VecAssemblyBegin(ug, ierr);  CHKERRQ(ierr)
 call VecAssemblyEnd(ug, ierr);    CHKERRQ(ierr)
-call DMGetLocalVector(da, xl, ierr); CHKERRQ(ierr)
-call DMGetLocalVector(da, ul, ierr); CHKERRQ(ierr)
-call DMGlobalToLocalBegin(da, xg, INSERT_VALUES, xl, ierr); CHKERRQ(ierr)
-call DMGlobalToLocalEnd(da, xg, INSERT_VALUES, xl, ierr); CHKERRQ(ierr)
-call DMGlobalToLocalBegin(da, ug, INSERT_VALUES, ul, ierr); CHKERRQ(ierr)
-call DMGlobalToLocalEnd(da, ug, INSERT_VALUES, ul, ierr); CHKERRQ(ierr)
 
-time = 0.d0
-dt = 0.1d0 ! cfl * dx / (speed_x + 1.d-13)
-iter = 0
+! settin time stepping
+ctx%g%time = 0.d0
+ctx%g%cfl  = 1.d0
+speed      = 1.d0
+ctx%g%dt   = ctx%g%cfl * ctx%g%dx / (speed + 1.d-13)
+ctx%g%iter = 0
 
-call save_solution(iter)
+if(rank==0) call log_parameters(ctx)
 
-!do while (time .lt. final_time)
-!  if (time + dt .gt. final_time) then
-!  endif
-!  call solve_lin_adv_diff()
-!  time = time + dt
-!  iter = iter + 1
-!  print*, 'time = ', time
-!enddo
+if(petsc_ts)then ! solve using PETSc time stepping
+
+  call TSCreate(PETSC_COMM_WORLD, ts, ierr); CHKERRQ(ierr)
+  call TSSetDM(ts,da,ierr); CHKERRQ(ierr)
+  ! by default: nonlinear problem
+  call TSSetProblemType(ts, TS_NONLINEAR, ierr); CHKERRQ(ierr)
+  ! in RHSfunction finite differencing in space takes place
+  call TSSetRHSFunction(ts, PETSC_NULL_VEC, RHSFunction, ctx, ierr); CHKERRQ(ierr)
+  call TSSetTime(ts, 0.0, ierr); CHKERRQ(ierr)
+  call TSSetTimeStep(ts, ctx%g%dt, ierr); CHKERRQ(ierr)
+  call TSSetType(ts, TSSSP, ierr); CHKERRQ(ierr);
+  call TSSetMaxTime(ts, ctx%g%final_time, ierr); CHKERRQ(ierr);
+  call TSSetMaxSteps(ts, ctx%g%itmax, ierr); CHKERRQ(ierr);
+  call TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP, ierr); CHKERRQ(ierr)
+  ! in Monitor function, time stepping may be computed, solution maybe monitored for norms
+  ! and solution may be written in files
+  call TSSetSolution(ts, ug, ierr); CHKERRQ(ierr)
+  call TSMonitorSet(ts, Monitor, ctx, PETSC_NULL_FUNCTION, ierr); CHKERRQ(ierr)
+  ! enables the use of different PETSc implemented time integration methods from command line
+  call TSGetType(ts, time_scheme, ierr); CHKERRQ(ierr)
+  call TSSetFromOptions(ts, ierr); CHKERRQ(ierr)
+  call TSSetUp(ts, ierr); CHKERRQ(ierr)
+  call TSSolve(ts, ug, ierr); CHKERRQ(ierr)
+
+else ! solve by implementing time integration methods
+
+  call save_solution(ctx%g%iter, ctx)      
+  do while (ctx%g%time .lt. ctx%g%final_time)
+    if (ctx%g%time + ctx%g%dt .gt. ctx%g%final_time) then
+    endif
+    !call solve_num_meth()
+    ctx%g%time = ctx%g%time + ctx%g%dt
+    ctx%g%iter = ctx%g%iter + 1
+    call save_solution(ctx%g%iter, ctx)
+    print*, 'time = ', ctx%g%time
+  enddo
+  call save_solution(ctx%g%iter, ctx)
+
+endif
 
 ! Print elapsed time
 runtime = MPI_Wtime() - runtime
-fmt4 = "(1x,'Iter  time min =',e20.12)"
+fmt4 = "(1x,'Iter runtime min =',e20.12)"
 if(rank == 0)then
    write(*,fmt4) runtime/60.0
 endif
 
-call DMDestroy(da, ierr); CHKERRQ(ierr)
-call VecDestroy(xg, ierr); CHKERRQ(ierr)
+call VecDestroy(ctx%g%xg, ierr); CHKERRQ(ierr)
 call VecDestroy(ug, ierr); CHKERRQ(ierr)
-call PetscFinalize(ierr); CHKERRA(ierr)
+call DMDestroy(da, ierr); CHKERRQ(ierr)
+if(petsc_ts)then
+  call TSDestroy(ts, ierr); CHKERRQ(ierr)
+endif
+call PetscFinalize(ierr); CHKERRQ(ierr)
 
 end program main
