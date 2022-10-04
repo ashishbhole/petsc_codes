@@ -1,7 +1,8 @@
-# 1D linear convection equation: u_t + c * u_x = 0
+# 1D linear convection equation: \partial_t u + c * \partial_x u = 0
   
 solves linear convection eqn using finite difference methods and periodic bc.
 Initial condition is given by Gaussian function.
+amplitude * \exp( - alpha * (x-x_0)^2 )
 
 PETSc DMDA is used for vector parallelization and TS for time stepping.
 

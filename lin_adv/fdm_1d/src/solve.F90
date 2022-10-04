@@ -31,18 +31,28 @@ PetscReal      :: val
 PetscInt       :: i, loc
 PetscScalar, pointer :: u(:), res(:)
 
-call TSGetDM(ts, da, ierr); CHKERRQ(ierr)
-call DMGetLocalVector(da, localU, ierr); CHKERRQ(ierr)
-call DMGlobalToLocalBegin(da, ug, INSERT_VALUES, localU, ierr); CHKERRQ(ierr);
-call DMGlobalToLocalEnd(da, ug, INSERT_VALUES, localU, ierr); CHKERRQ(ierr);
-call DMDAVecGetArrayReadF90(da, localU, u, ierr); CHKERRQ(ierr);
-call DMDAVecGetArrayF90(da, r, res, ierr); CHKERRQ(ierr);
+call TSGetDM(ts, da, ierr)
+CHKERRQ(ierr)
+call DMGetLocalVector(da, localU, ierr)
+CHKERRQ(ierr)
+call DMGlobalToLocalBegin(da, ug, INSERT_VALUES, localU, ierr)
+CHKERRQ(ierr)
+call DMGlobalToLocalEnd(da, ug, INSERT_VALUES, localU, ierr)
+CHKERRQ(ierr)
+call DMDAVecGetArrayReadF90(da, localU, u, ierr)
+CHKERRQ(ierr)
+call DMDAVecGetArrayF90(da, r, res, ierr)
+CHKERRQ(ierr)
 call DMDAGetCorners(da, ctx%g%ibeg, PETSC_NULL_INTEGER,PETSC_NULL_INTEGER, ctx%g%nloc, &
-                 PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, ierr); CHKERRQ(ierr)
+                 PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, ierr)
+CHKERRQ(ierr)
 call finite_diffence_method(u, res, ctx)
-call DMDAVecRestoreArrayReadF90(da, localU, u, ierr); CHKERRQ(ierr);
-call DMDAVecRestoreArrayF90(da, r, res, ierr); CHKERRQ(ierr);
-call DMRestoreLocalVector(da, localU ,ierr); CHKERRQ(ierr);
+call DMDAVecRestoreArrayReadF90(da, localU, u, ierr)
+CHKERRQ(ierr)
+call DMDAVecRestoreArrayF90(da, r, res, ierr)
+CHKERRQ(ierr)
+call DMRestoreLocalVector(da, localU ,ierr)
+CHKERRQ(ierr)
 end subroutine RHSFunction
 
 ! This subroutine is called after every time step

@@ -31,10 +31,13 @@ type(grid)         :: g
 type(tsdata)       :: ctx
 
 call PetscInitialize(PETSC_NULL_CHARACTER, ierr) 
+CHKERRQ(ierr)
 if(ierr /= 0) stop "PETSc not intialized"
 
-call MPI_Comm_rank(PETSC_COMM_WORLD, rank, ierr); CHKERRQ(ierr)
-call MPI_Comm_size(PETSC_COMM_WORLD, nproc, ierr); CHKERRQ(ierr)
+call MPI_Comm_rank(PETSC_COMM_WORLD, rank, ierr)
+CHKERRQ(ierr)
+call MPI_Comm_size(PETSC_COMM_WORLD, nproc, ierr)
+CHKERRQ(ierr)
 runtime = MPI_Wtime()
 fmt1 = "(1x, 'Date ', i2.2, '/', i2.2, '/', i4.4, '; time ', &
        & i2.2, ':', i2.2, ':', i2.2 )"
@@ -46,14 +49,20 @@ if(rank == 0)then
    print*,'Number of processes: ', nproc
 endif
 
+call set_and_braodcast_parameters(ctx)
+
 ! Creates an object that will manage the communication of one-dimensional regular array data
 ! that is distributed across some processors. 
 call DMDACreate1d(PETSC_COMM_WORLD, DM_BOUNDARY_PERIODIC, ctx%g%Np, 1, stencil_width, &
-                  PETSC_NULL_INTEGER, da, ierr) ; CHKERRQ(ierr)
-call DMSetFromOptions(da, ierr) ; CHKERRQ(ierr)
+                  PETSC_NULL_INTEGER, da, ierr) 
+CHKERRQ(ierr)
+call DMSetFromOptions(da, ierr) 
+CHKERRQ(ierr)
 call DMSetUp(da, ierr); CHKERRQ(ierr)
-call DMCreateGlobalVector(da, ctx%g%xg, ierr); CHKERRQ(ierr)
-call DMCreateGlobalVector(da, ug, ierr); CHKERRQ(ierr)
+call DMCreateGlobalVector(da, ctx%g%xg, ierr)
+CHKERRQ(ierr)
+call DMCreateGlobalVector(da, ug, ierr)
+CHKERRQ(ierr)
 ! Returns the global (x,y,z) indices of the lower left corner and size of the local region, excluding ghost points.
 call DMDAGetCorners(da, ctx%g%ibeg, PETSC_NULL_INTEGER,PETSC_NULL_INTEGER, ctx%g%nloc, &
                     PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, ierr)
@@ -70,13 +79,19 @@ ctx%g%dx = (ctx%g%xmax - ctx%g%xmin) / dble(ctx%g%Np)
 do i = ctx%g%ibeg, ctx%g%ibeg+ctx%g%nloc-1
    xp = i*ctx%g%dx ; loc = i
    call initial_condition(xp, fun)
-   call VecSetValues(ctx%g%xg, one, loc, xp, INSERT_VALUES, ierr); CHKERRQ(ierr)
-   call VecSetValues(ug, one, loc, fun, INSERT_VALUES, ierr);   CHKERRQ(ierr)
+   call VecSetValues(ctx%g%xg, one, loc, xp, INSERT_VALUES, ierr)
+   CHKERRQ(ierr)
+   call VecSetValues(ug, one, loc, fun, INSERT_VALUES, ierr)
+   CHKERRQ(ierr)
 enddo
-call VecAssemblyBegin(ctx%g%xg, ierr);  CHKERRQ(ierr)
-call VecAssemblyEnd(ctx%g%xg, ierr);    CHKERRQ(ierr)
-call VecAssemblyBegin(ug, ierr);  CHKERRQ(ierr)
-call VecAssemblyEnd(ug, ierr);    CHKERRQ(ierr)
+call VecAssemblyBegin(ctx%g%xg, ierr)
+CHKERRQ(ierr)
+call VecAssemblyEnd(ctx%g%xg, ierr)
+CHKERRQ(ierr)
+call VecAssemblyBegin(ug, ierr)
+CHKERRQ(ierr)
+call VecAssemblyEnd(ug, ierr)
+CHKERRQ(ierr)
 
 ! settin time stepping
 ctx%g%time = 0.d0
@@ -94,17 +109,20 @@ if(petsc_ts)then ! solve using PETSc time stepping
   ! by default: nonlinear problem
   call TSSetProblemType(ts, TS_NONLINEAR, ierr); CHKERRQ(ierr)
   ! in RHSfunction finite differencing in space takes place
-  call TSSetRHSFunction(ts, PETSC_NULL_VEC, RHSFunction, ctx, ierr); CHKERRQ(ierr)
-  call TSSetTime(ts, 0.0, ierr); CHKERRQ(ierr)
+  call TSSetRHSFunction(ts, PETSC_NULL_VEC, RHSFunction, ctx, ierr)
+  CHKERRQ(ierr)
+  call TSSetTime(ts, 0.d0, ierr); CHKERRQ(ierr)
   call TSSetTimeStep(ts, ctx%g%dt, ierr); CHKERRQ(ierr)
   call TSSetType(ts, TSSSP, ierr); CHKERRQ(ierr);
   call TSSetMaxTime(ts, ctx%g%final_time, ierr); CHKERRQ(ierr);
   call TSSetMaxSteps(ts, ctx%g%itmax, ierr); CHKERRQ(ierr);
-  call TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP, ierr); CHKERRQ(ierr)
+  call TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP, ierr)
+  CHKERRQ(ierr)
   ! in Monitor function, time stepping may be computed, solution maybe monitored for norms
   ! and solution may be written in files
   call TSSetSolution(ts, ug, ierr); CHKERRQ(ierr)
-  call TSMonitorSet(ts, Monitor, ctx, PETSC_NULL_FUNCTION, ierr); CHKERRQ(ierr)
+  call TSMonitorSet(ts, Monitor, ctx, PETSC_NULL_FUNCTION, ierr)
+  CHKERRQ(ierr)
   ! enables the use of different PETSc implemented time integration methods from command line
   call TSGetType(ts, time_scheme, ierr); CHKERRQ(ierr)
   call TSSetFromOptions(ts, ierr); CHKERRQ(ierr)
