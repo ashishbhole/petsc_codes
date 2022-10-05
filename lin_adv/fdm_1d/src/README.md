@@ -23,7 +23,17 @@ To run in parallel
 ```
 mpirun -np 2 ./exe
 ```
+
+To use PETSc explicit time stepping (TS):
+```
+mpirun -np 2 ./exe -ts_type euler
+mpirun -np 2 ./exe -ts_type rk
+mpirun -np 2 ./exe -ts_type ssp
+```
+
 Then plot solution in gnuplot
 ```
 gnuplot>plot 'solution_0000000.dat' u 1:2 w l lw 4, 'solution_0000050.dat' u 1:2 w l lw 4
 ```
+
+This code uses PETSc 3.18.0.

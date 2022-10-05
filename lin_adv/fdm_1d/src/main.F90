@@ -113,7 +113,7 @@ if(petsc_ts)then ! solve using PETSc time stepping
   CHKERRQ(ierr)
   call TSSetTime(ts, 0.d0, ierr); CHKERRQ(ierr)
   call TSSetTimeStep(ts, ctx%g%dt, ierr); CHKERRQ(ierr)
-  call TSSetType(ts, TSSSP, ierr); CHKERRQ(ierr);
+  call TSSetType(ts, TSRK, ierr); CHKERRQ(ierr);
   call TSSetMaxTime(ts, ctx%g%final_time, ierr); CHKERRQ(ierr);
   call TSSetMaxSteps(ts, ctx%g%itmax, ierr); CHKERRQ(ierr);
   call TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP, ierr)
