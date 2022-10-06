@@ -18,6 +18,8 @@ res = 0.d0
 select case(trim(space_disc))
 case('CD2')
   call CD2(ua, res)
+case('CD4')
+  call CD4(ua, res)  
 !case('LELE')
 !  call LELE(ua, res)
 case default
@@ -45,6 +47,27 @@ enddo
 enddo
 
 end subroutine CD2
+
+subroutine CD4(ua, res)
+implicit none
+PetscScalar :: ua(gist:gien,gjst:gjen), res(ist:ien,jst:jen)
+! Local variables
+integer  :: i, j
+real(dp) :: idx, idy, a_m2, a_m1, a_p1, a_p2
+
+a_m2 =  1.d0/12.d0
+a_m1 = -2.d0/3.d0
+a_p1 = - a_m1
+a_p2 = - a_m2
+idx = 0.5d0/dx; idy = 0.5d0/dy
+do j = jst, jen
+do i = ist, ien
+   res(i,j) = - speed_x * (a_m2*ua(i-2,j)+a_m1*ua(i-1,j)+a_p1*ua(i+1,j)+a_m2*ua(i+2,j)) * idx &
+            + - speed_y * (a_m2*ua(i,j-2)+a_m1*ua(i,j-1)+a_p1*ua(i,j+1)+a_m2*ua(i,j+2)) * idy
+enddo
+enddo
+
+end subroutine CD4
 
 !subroutine LELE(ua, res)
 !implicit none
