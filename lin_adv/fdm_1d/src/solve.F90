@@ -25,11 +25,10 @@ PetscReal      :: time
 Vec            :: yg
 Vec            :: r
 type(tsdata)   :: ctx
-Vec            :: localU   
-PetscErrorCode :: ierr
-PetscReal      :: val
-PetscInt       :: i, loc
+Vec            :: localU
 PetscScalar, pointer :: u(:), res(:)
+PetscErrorCode :: ierr
+PetscOffset :: index_u, index_res
 
 call TSGetDM(ts, da, ierr)
 CHKERRQ(ierr)
@@ -43,16 +42,14 @@ call DMDAVecGetArrayReadF90(da, localU, u, ierr)
 CHKERRQ(ierr)
 call DMDAVecGetArrayF90(da, r, res, ierr)
 CHKERRQ(ierr)
-call DMDAGetCorners(da, ctx%g%ibeg, PETSC_NULL_INTEGER,PETSC_NULL_INTEGER, ctx%g%nloc, &
-                 PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, ierr)
-CHKERRQ(ierr)
 call finite_diffence_method(u, res, ctx)
 call DMDAVecRestoreArrayReadF90(da, localU, u, ierr)
 CHKERRQ(ierr)
 call DMDAVecRestoreArrayF90(da, r, res, ierr)
 CHKERRQ(ierr)
-call DMRestoreLocalVector(da, localU ,ierr)
+call DMRestoreLocalVector(da, localU, ierr)
 CHKERRQ(ierr)
+
 end subroutine RHSFunction
 
 ! This subroutine is called after every time step

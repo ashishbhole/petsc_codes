@@ -36,13 +36,14 @@ use petscts
    ! petsc functionalities
    logical  :: petsc_ts = .true.
 
+   integer  :: ist, ien, gist, gien
+
    type grid
       PetscInt    :: Np = 100
       PetscReal   :: dx, xmin=0.d0, xmax=1.d0
       integer     :: iter, itmax=100, itsave=10
       PetscReal   :: dt, cfl, time, final_time=1.d0      
-      Vec         :: xg
-      PetscInt    :: ibeg, nloc   
+      PetscInt    :: ibeg, nloc, ibeg_ghosted, nloc_ghosted   
   end type grid
 
    type tsdata

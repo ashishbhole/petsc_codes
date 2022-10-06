@@ -17,7 +17,7 @@ use variables
 use auxillary_conditions
 use read_write
 use solve
-!use fdm
+use fdm
 implicit none
 ! petsc datatypes
 PetscInt           :: loc
@@ -59,8 +59,6 @@ CHKERRQ(ierr)
 call DMSetFromOptions(da, ierr) 
 CHKERRQ(ierr)
 call DMSetUp(da, ierr); CHKERRQ(ierr)
-call DMCreateGlobalVector(da, ctx%g%xg, ierr)
-CHKERRQ(ierr)
 call DMCreateGlobalVector(da, ug, ierr)
 CHKERRQ(ierr)
 ! Returns the global (x,y,z) indices of the lower left corner and size of the local region, excluding ghost points.
@@ -73,26 +71,23 @@ call DMDAGetInfo(da, PETSC_NULL_INTEGER, ctx%g%Np, PETSC_NULL_INTEGER, PETSC_NUL
         PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, &
         PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, ierr)
 CHKERRQ(ierr)
-
+call DMDAGetGhostCorners(da, ctx%g%ibeg_ghosted, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, &
+                             ctx%g%nloc_ghosted, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, ierr)
+CHKERRQ(ierr)
+ist = ctx%g%ibeg+1
+gist = ctx%g%ibeg_ghosted+1
+ien = ctx%g%ibeg+ctx%g%nloc ! -1
+gien = ctx%g%ibeg_ghosted+ctx%g%nloc_ghosted ! -1
 ! setting equidistant grid and initial condition on it.
 ctx%g%dx = (ctx%g%xmax - ctx%g%xmin) / dble(ctx%g%Np)
-do i = ctx%g%ibeg, ctx%g%ibeg+ctx%g%nloc-1
-   xp = i*ctx%g%dx ; loc = i
+do i = ist, ien
+   xp = (i-1)*ctx%g%dx ; loc = i-1
    call initial_condition(xp, fun)
-   call VecSetValues(ctx%g%xg, one, loc, xp, INSERT_VALUES, ierr)
-   CHKERRQ(ierr)
    call VecSetValues(ug, one, loc, fun, INSERT_VALUES, ierr)
    CHKERRQ(ierr)
 enddo
-call VecAssemblyBegin(ctx%g%xg, ierr)
-CHKERRQ(ierr)
-call VecAssemblyEnd(ctx%g%xg, ierr)
-CHKERRQ(ierr)
-call VecAssemblyBegin(ug, ierr)
-CHKERRQ(ierr)
-call VecAssemblyEnd(ug, ierr)
-CHKERRQ(ierr)
-
+call VecAssemblyBegin(ug, ierr); CHKERRQ(ierr)
+call VecAssemblyEnd(ug, ierr); CHKERRQ(ierr)
 ! settin time stepping
 ctx%g%time = 0.d0
 ctx%g%cfl  = 1.d0
@@ -113,7 +108,7 @@ if(petsc_ts)then ! solve using PETSc time stepping
   CHKERRQ(ierr)
   call TSSetTime(ts, 0.d0, ierr); CHKERRQ(ierr)
   call TSSetTimeStep(ts, ctx%g%dt, ierr); CHKERRQ(ierr)
-  call TSSetType(ts, TSRK, ierr); CHKERRQ(ierr);
+  call TSSetType(ts, TSSSP, ierr); CHKERRQ(ierr);
   call TSSetMaxTime(ts, ctx%g%final_time, ierr); CHKERRQ(ierr);
   call TSSetMaxSteps(ts, ctx%g%itmax, ierr); CHKERRQ(ierr);
   call TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP, ierr)
@@ -152,12 +147,11 @@ if(rank == 0)then
    write(*,fmt4) runtime/60.0
 endif
 
-call VecDestroy(ctx%g%xg, ierr); CHKERRQ(ierr)
 call VecDestroy(ug, ierr); CHKERRQ(ierr)
 call DMDestroy(da, ierr); CHKERRQ(ierr)
-if(petsc_ts)then
+!if(petsc_ts)then
   call TSDestroy(ts, ierr); CHKERRQ(ierr)
-endif
+!endif
 call PetscFinalize(ierr); CHKERRQ(ierr)
 
 end program main

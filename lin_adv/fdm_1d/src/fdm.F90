@@ -6,12 +6,13 @@ use petscvec
 use double
 use variables
 implicit none
+
 contains
 
 subroutine finite_diffence_method(ua, res, ctx)
 implicit none
 type(tsdata)         :: ctx
-PetscScalar,pointer  :: res(:), ua(:)
+PetscScalar  :: ua(gist:gien), res(ist:ien)
 ! Local variables
 integer        :: i
 
@@ -20,12 +21,12 @@ res = 0.d0
 select case(trim(space_disc))
 case('CD2')
   call CD2(ua, res, ctx)
-case('CD4')  
-  call CD4(ua, res, ctx)
-case('CD6')
-  call CD6(ua, res, ctx)
-case('CD8')  
-  call CD8(ua, res, ctx)
+!case('CD4')  
+!  call CD4(ua, res, ctx)
+!case('CD6')
+!  call CD6(ua, res, ctx)
+!case('CD8')  
+!  call CD8(ua, res, ctx)
 case('LELE')
   call LELE(ua, res, ctx)
 case default
@@ -39,64 +40,33 @@ end subroutine finite_diffence_method
 
 subroutine CD2(ua, res, ctx)
 implicit none
-type(tsdata)         :: ctx
-PetscScalar,pointer  :: res(:), ua(:)
+type(tsdata) :: ctx
+PetscScalar  :: ua(gist:gien), res(ist:ien)
 ! Local variables
 integer        :: i
-real(dp) :: idx
+real(dp) :: idx, tmp
 
-idx = 0.5/ctx%g%dx
-res(1) = - speed * (ua(2)-ua(ctx%g%Np-1)) * idx
-do i = ctx%g%ibeg, ctx%g%ibeg+ctx%g%nloc
-   res(i) = - speed * (ua(i+1)-ua(i-1)) * idx
+idx = 0.5d0/ctx%g%dx
+do i = ist, ien
+   res(i) = - speed * (ua(i+1)-ua(i-1))
 enddo
-res(ctx%g%Np) = - speed * (ua(2)-ua(ctx%g%Np-1)) * idx
+res = res * idx
 
 end subroutine CD2
 
-subroutine CD4(ua, res, ctx)
-implicit none
-type(tsdata)         :: ctx
-PetscScalar,pointer  :: res(:), ua(:)
-! Local variables
-integer        :: i
-
-end subroutine CD4
-
-subroutine CD6(ua, res, ctx)
-implicit none
-type(tsdata)         :: ctx
-PetscScalar,pointer  :: res(:), ua(:)
-! Local variables
-integer        :: i
-
-end subroutine CD6
-
-subroutine CD8(ua, res, ctx)
-implicit none
-type(tsdata)         :: ctx
-PetscScalar,pointer  :: res(:), ua(:)
-! Local variables
-integer        :: i
-
-end subroutine CD8
-
 subroutine LELE(ua, res, ctx)
 implicit none
-type(tsdata)         :: ctx
-PetscScalar,pointer  :: res(:), ua(:)
+type(tsdata) :: ctx
+PetscScalar  :: ua(gist:gien), res(ist:ien)
 ! Local variables
-integer        :: i, ist, ien
-real(dp), allocatable, dimension(:) :: udia, dia, ldia, rhs
+integer      :: i
+real(dp)     :: udia(gist:gien), dia(gist:gien)
+real(dp)     :: ldia(gist:gien), rhs(gist:gien)
+real(dp)     :: res_tmp(gist:gien)
 real(dp) :: a_m1, a_0, a_p1, idx
 real(dp) :: b_m2, b_m1, b_0, b_p1, b_p2
 
-
-ist = ctx%g%ibeg-stencil_width
-ien = ctx%g%ibeg+ctx%g%nloc+stencil_width
-
-allocate(udia(ist:ien), dia(ist:ien), ldia(ist:ien), rhs(ist:ien))
-udia = 0.0 ; dia = 0.0 ; ldia = 0.0; rhs = 0.0
+udia = 0.0 ; dia = 0.0 ; ldia = 0.0; rhs = 0.0; res_tmp = 0.0
 
 !interior nodes
 a_m1 = 1.0/3.0
@@ -109,23 +79,24 @@ b_p1 = - b_m1
 b_p2 = - b_m2
 
 idx = 1.0/ctx%g%dx
-ldia(ist) = 0.0 ; dia(ist) = 1.0 ; udia(ist) = 0.0 
-rhs(ist) = - speed * (ua(ist+1) - ua(ist)) * idx
-ldia(ist+1) = 0.0 ; dia(ist+1)  = 1.0 ; udia(ist+1) = 0.0
-rhs(ist+1) = - speed * (0.5*ua(ist+2) - 0.5* ua(ist)) * idx
-do i = ist+2, ien-2
+ldia(gist) = 0.0 ; dia(gist) = 1.0 ; udia(gist) = 0.0 
+rhs(gist) = - speed * (ua(gist+1) - ua(gist)) * idx
+ldia(gist+1) = 0.0 ; dia(gist+1)  = 1.0 ; udia(gist+1) = 0.0
+rhs(gist+1) = - speed * (0.5*ua(gist+2) - 0.5* ua(gist)) * idx
+do i = gist+2, gien-2
    ldia(i) = a_m1; dia(i) = a_0; udia(i) = a_p1
    rhs(i) = - speed * ( b_m2 * ua(i-2) + b_m1 * ua(i-1) + b_0 * ua(i) + &
                         b_p1 * ua(i+1) + b_p2 * ua(i+2) ) * idx
 enddo
-ldia(ien-1) = 0.0 ; dia(ien-1) = 1.0 ; udia(ien-1) = 0.0
-rhs(ien-1) = - speed * (0.5*ua(ien) - 0.5*ua(ien-2)) * idx
-ldia(ien) = 0.0 ; dia(ien)  = 1.0 ; udia(ien) = 0.0
-rhs(ien)  = - speed * (ua(ien) - ua(ien-1)) * idx
+ldia(gien-1) = 0.0 ; dia(gien-1) = 1.0 ; udia(gien-1) = 0.0
+rhs(gien-1) = - speed * (0.5*ua(gien) - 0.5*ua(gien-2)) * idx
+ldia(gien) = 0.0 ; dia(gien)  = 1.0 ; udia(gien) = 0.0
+rhs(gien)  = - speed * (ua(gien) - ua(gien-1)) * idx
 
-call tdma(ldia(ist+1:ien), dia(ist:ien), udia(ist:ien-1), rhs(ist:ien), res(ist:ien), ien-ist+1)
+call tdma(ldia(gist+1:gien), dia(gist:gien), udia(gist:gien-1), & 
+           rhs(gist:gien), res_tmp(gist:gien), gien-gist+1)
 
-deallocate(udia, dia, ldia)
+res(ist:ien) = res_tmp(ist:ien)
 
 end subroutine LELE
 
