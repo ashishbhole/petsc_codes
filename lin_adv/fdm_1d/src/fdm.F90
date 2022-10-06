@@ -21,8 +21,8 @@ res = 0.d0
 select case(trim(space_disc))
 case('CD2')
   call CD2(ua, res, ctx)
-!case('CD4')  
-!  call CD4(ua, res, ctx)
+case('CD4')  
+  call CD4(ua, res, ctx)
 !case('CD6')
 !  call CD6(ua, res, ctx)
 !case('CD8')  
@@ -43,16 +43,35 @@ implicit none
 type(tsdata) :: ctx
 PetscScalar  :: ua(gist:gien), res(ist:ien)
 ! Local variables
-integer        :: i
-real(dp) :: idx, tmp
+integer      :: i
+real(dp)     :: idx
 
 idx = 0.5d0/ctx%g%dx
 do i = ist, ien
    res(i) = - speed * (ua(i+1)-ua(i-1))
 enddo
 res = res * idx
-
 end subroutine CD2
+
+subroutine CD4(ua, res, ctx)
+implicit none
+type(tsdata) :: ctx
+PetscScalar  :: ua(gist:gien), res(ist:ien)
+! Local variables
+integer        :: i
+real(dp) :: idx, a_m2, a_m1, a_p1, a_p2
+
+a_m2 =  1.d0/12.d0
+a_m1 = -2.d0/3.d0
+a_p1 = - a_m1
+a_p2 = - a_m2
+idx  = 1.d0/ctx%g%dx
+do i = ist, ien
+   res(i) = - speed * ( a_m2*ua(i-2)+a_m1*ua(i-1) + &
+                        a_p1*ua(i+1)+a_p2*ua(i+2) )
+enddo
+res = res * idx
+end subroutine CD4
 
 subroutine LELE(ua, res, ctx)
 implicit none
