@@ -90,8 +90,6 @@ call VecAssemblyBegin(ug, ierr); CHKERRQ(ierr)
 call VecAssemblyEnd(ug, ierr); CHKERRQ(ierr)
 ! settin time stepping
 ctx%g%time = 0.d0
-ctx%g%cfl  = 1.d0
-speed      = 1.d0
 ctx%g%dt   = ctx%g%cfl * ctx%g%dx / (speed + 1.d-13)
 ctx%g%iter = 0
 
@@ -108,7 +106,7 @@ if(petsc_ts)then ! solve using PETSc time stepping
   CHKERRQ(ierr)
   call TSSetTime(ts, 0.d0, ierr); CHKERRQ(ierr)
   call TSSetTimeStep(ts, ctx%g%dt, ierr); CHKERRQ(ierr)
-  call TSSetType(ts, TSSSP, ierr); CHKERRQ(ierr);
+  call TSSetType(ts, TSEULER, ierr); CHKERRQ(ierr);
   call TSSetMaxTime(ts, ctx%g%final_time, ierr); CHKERRQ(ierr);
   call TSSetMaxSteps(ts, ctx%g%itmax, ierr); CHKERRQ(ierr);
   call TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP, ierr)
@@ -147,11 +145,25 @@ if(rank == 0)then
    write(*,fmt4) runtime/60.0
 endif
 
+call VecDuplicate(ug, ue, ierr); CHKERRQ(ierr)
+do i = ist, ien
+   xp = (i-1)*ctx%g%dx ; loc = i-1
+   call exact_solution(xp, fun, ctx)
+   call VecSetValues(ue, one, loc, fun, INSERT_VALUES, ierr)
+   CHKERRQ(ierr)
+enddo
+call VecAssemblyBegin(ue, ierr); CHKERRQ(ierr)
+call VecAssemblyEnd(ue, ierr); CHKERRQ(ierr)
+call VecAXPY(ue, -1.d0, ug, ierr); CHKERRQ(ierr)
+call VecNorm(ue, NORM_2, err_l2, ierr); CHKERRQ(ierr)
+print*, ctx%g%Np, err_l2 * dsqrt(1.d0/ctx%g%Np)
+
+call VecDestroy(ue, ierr); CHKERRQ(ierr)
 call VecDestroy(ug, ierr); CHKERRQ(ierr)
 call DMDestroy(da, ierr); CHKERRQ(ierr)
-!if(petsc_ts)then
+if(petsc_ts)then
   call TSDestroy(ts, ierr); CHKERRQ(ierr)
-!endif
+endif
 call PetscFinalize(ierr); CHKERRQ(ierr)
 
 end program main

@@ -67,8 +67,8 @@ a_p1 = - a_m1
 a_p2 = - a_m2
 idx  = 1.d0/ctx%g%dx
 do i = ist, ien
-   res(i) = - speed * ( a_m2*ua(i-2)+a_m1*ua(i-1) + &
-                        a_p1*ua(i+1)+a_p2*ua(i+2) )
+   res(i) = - speed * ( a_m2*ua(i-2) + a_m1*ua(i-1) + &
+                        a_p1*ua(i+1) + a_p2*ua(i+2) )
 enddo
 res = res * idx
 end subroutine CD4
