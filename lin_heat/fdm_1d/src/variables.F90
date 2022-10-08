@@ -18,7 +18,7 @@ use petscts
 
    PetscErrorCode     :: ierr
    PetscInt           :: rank, nproc, one = 1, zero = 0
-   PetscInt           :: stencil_width
+   PetscInt           :: stencil_width = 7
    PetscReal          :: nu = 1.d-4
 
    DM                 :: da
@@ -29,7 +29,7 @@ use petscts
    ! auxillary condition
    real(dp) :: amplitude = 1.d0, alpha = 128.d0, x_0 = 0.5d0
    
-   character*64  :: space_disc = 'CD2', time_disc ! 0 : explicit, 1 : implicit
+   character*64  :: space_disc = 'CD6', time_disc ! 0 : explicit, 1 : implicit
    integer  :: nrk
    real(dp) :: ark(3)
 
