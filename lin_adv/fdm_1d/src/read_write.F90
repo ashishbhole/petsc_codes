@@ -52,15 +52,15 @@ if(rank == 0)then
 
   select case(trim(space_disc))
   case('CD2')
-    stencil_width = 3
+    stencil_width = 1
   case('CD4')
-    stencil_width = 5
+    stencil_width = 2
   case('CD6')
-    stencil_width = 7
+    stencil_width = 3
   case('CD8')
-    stencil_width = 9
+    stencil_width = 4
   case('LELE')
-    stencil_width = 20
+    stencil_width = 10
   case default
     print*, 'please select a finite difference method in space'
     print*, 'Available options: CD2'

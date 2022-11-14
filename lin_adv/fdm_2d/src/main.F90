@@ -75,12 +75,12 @@ CHKERRQ(ierr)
 call DMDAGetGhostCorners(da, ibeg_ghosted, jbeg_ghosted, PETSC_NULL_INTEGER, &
                              Nx_loc_ghosted, Ny_loc_ghosted, PETSC_NULL_INTEGER, ierr)
 CHKERRQ(ierr)
-ist = ibeg+1 ; ien = ibeg+Nx_loc
-jst = jbeg+1 ; jen = jbeg+Ny_loc
-gist = ibeg_ghosted+1 ; gien = ibeg_ghosted+Nx_loc_ghosted 
-gjst = jbeg_ghosted+1 ; gjen = jbeg_ghosted+Ny_loc_ghosted
+ist = ibeg ; ien = ibeg+Nx_loc-1
+jst = jbeg ; jen = jbeg+Ny_loc-1
+gist = ibeg_ghosted ; gien = ibeg_ghosted+Nx_loc_ghosted-1
+gjst = jbeg_ghosted ; gjen = jbeg_ghosted+Ny_loc_ghosted-1
 
-call DMDAVecGetArrayF90(da, ug, u, ierr); CHKERRQ(ierr);
+call DMDAVecGetArrayF90(da, ug, u, ierr); CHKERRQ(ierr)
 ! setting equidistant grid and initial condition on it.
 dx = (xmax - xmin) / dble(Nx)
 dy = (ymax - ymin) / dble(Ny)
@@ -91,7 +91,7 @@ do i = ist, ien
    u(i,j) = fun
 enddo
 enddo
-call DMDAVecRestoreArrayF90(da, ug, u, ierr); CHKERRQ(ierr);
+call DMDAVecRestoreArrayF90(da, ug, u, ierr); CHKERRQ(ierr)
 
 ! settin time stepping
 time    = 0.d0
@@ -112,7 +112,7 @@ if(petsc_ts)then ! solve using PETSc time stepping
   CHKERRQ(ierr)
   call TSSetTime(ts, 0.d0, ierr); CHKERRQ(ierr)
   call TSSetTimeStep(ts, dt, ierr); CHKERRQ(ierr)
-  call TSSetType(ts, TSEULER, ierr); CHKERRQ(ierr);
+  call TSSetType(ts, TSSSP, ierr); CHKERRQ(ierr);
   call TSSetMaxTime(ts, final_time, ierr); CHKERRQ(ierr);
   call TSSetMaxSteps(ts, itmax, ierr); CHKERRQ(ierr);
   call TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP, ierr)
@@ -151,6 +151,21 @@ if(rank == 0)then
    write(*,fmt4) runtime/60.0
 endif
 
+call VecDuplicate(ug, ue, ierr); CHKERRQ(ierr)
+call DMDAVecGetArrayF90(da, ue, u, ierr); CHKERRQ(ierr)
+do j = jst, jen
+do i = ist, ien
+   xp = xmin+(i-1)*dx ; yp = ymin+(j-1)*dy
+   call exact_solution(xp, yp, fun)
+   u(i,j) = fun
+enddo
+enddo
+call DMDAVecRestoreArrayF90(da, ue, u, ierr); CHKERRQ(ierr)
+call VecAXPY(ue, -1.d0, ug, ierr); CHKERRQ(ierr)
+call VecNorm(ue, NORM_2, err_l2, ierr); CHKERRQ(ierr)
+print*, sqrt(dx*dy), err_l2 * dsqrt(1.d0/(Nx*Ny))
+
+call VecDestroy(ue, ierr); CHKERRQ(ierr)
 call VecDestroy(ug, ierr); CHKERRQ(ierr)
 call DMDestroy(da, ierr); CHKERRQ(ierr)
 !if(petsc_ts)then

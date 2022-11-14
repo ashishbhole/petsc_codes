@@ -16,7 +16,6 @@ PetscInt       :: iter
 Vec            :: ug
 DM             :: da
 Vec            :: ul
-Vec            :: uall
 character(30) :: filename
 PetscScalar, pointer :: ua(:,:)
 integer       :: i, j
@@ -31,7 +30,7 @@ call DMGlobalToLocalEnd(da, ug, INSERT_VALUES, ul, ierr)
 CHKERRQ(ierr)
 call DMDAVecGetArrayF90(da, ul, ua, ierr); CHKERRQ(ierr)
 !call MPI_Comm_rank(PETSC_COMM_WORLD, rank, ierr); CHKERRQ(ierr)
-write(filename, '(a,i3.3,a,i3.3,a)') 'solution_', iter, '_', rank, '.plt'
+write(filename, '(a,i3.3,a,i3.3,a)') 'solution_', rank, '_', iter, '.plt'
 open(10,file=trim(filename))
 write(10,*) "TITLE = solution"
 write(10,*) "VARIABLES = x, y, sol"
@@ -45,6 +44,9 @@ enddo
 close(10)
 call DMDAVecRestoreArrayF90(da, ul, ua, ierr); CHKERRQ(ierr)
 call DMRestoreLocalVector(da, ul, ierr); CHKERRQ(ierr)
+
+call VecDestroy(ul,ierr); CHKERRQ(ierr)
+
 end subroutine save_solution
 
 subroutine save_solution_hdf5(iter, da, ug)

@@ -19,7 +19,9 @@ select case(trim(space_disc))
 case('CD2')
   call CD2(ua, res)
 case('CD4')
-  call CD4(ua, res)  
+  call CD4(ua, res)
+case('CD6')
+  call CD6(ua, res)  
 !case('LELE')
 !  call LELE(ua, res)
 case default
@@ -42,7 +44,7 @@ idx = 0.5d0/dx; idy = 0.5d0/dy
 do j = jst, jen
 do i = ist, ien
    res(i,j) = - speed_x * (ua(i+1,j)-ua(i-1,j)) * idx &
-            + - speed_y * (ua(i,j+1)-ua(i,j-1)) * idy
+              - speed_y * (ua(i,j+1)-ua(i,j-1)) * idy
 enddo
 enddo
 
@@ -59,15 +61,38 @@ a_m2 =  1.d0/12.d0
 a_m1 = -2.d0/3.d0
 a_p1 = - a_m1
 a_p2 = - a_m2
-idx = 0.5d0/dx; idy = 0.5d0/dy
+idx = 1.d0/dx; idy = 1.d0/dy
 do j = jst, jen
 do i = ist, ien
-   res(i,j) = - speed_x * (a_m2*ua(i-2,j)+a_m1*ua(i-1,j)+a_p1*ua(i+1,j)+a_m2*ua(i+2,j)) * idx &
-            + - speed_y * (a_m2*ua(i,j-2)+a_m1*ua(i,j-1)+a_p1*ua(i,j+1)+a_m2*ua(i,j+2)) * idy
+   res(i,j) = - speed_x * (a_m2*ua(i-2,j)+a_m1*ua(i-1,j)+a_p1*ua(i+1,j)+a_p2*ua(i+2,j)) * idx &
+              - speed_y * (a_m2*ua(i,j-2)+a_m1*ua(i,j-1)+a_p1*ua(i,j+1)+a_p2*ua(i,j+2)) * idy
 enddo
 enddo
-
 end subroutine CD4
+
+subroutine CD6(ua, res)
+implicit none
+PetscScalar :: ua(gist:gien,gjst:gjen), res(ist:ien,jst:jen)
+! Local variables
+integer  :: i, j
+real(dp) :: idx, idy, a_m3, a_m2, a_m1, a_p1, a_p2, a_p3
+
+a_m3 = - 1.d0/60.d0
+a_m2 =   3.d0/20.d0
+a_m1 = - 3.d0/4.d0
+a_p1 = - a_m1
+a_p2 = - a_m2
+a_p3 = - a_m3
+idx = 1.d0/dx; idy = 1.d0/dy
+do j = jst, jen
+do i = ist, ien
+   res(i,j) = - speed_x * (a_m3*ua(i-3,j)+a_m2*ua(i-2,j)+a_m1*ua(i-1,j) &
+                          +a_p1*ua(i+1,j)+a_p2*ua(i+2,j)+a_p3*ua(i+3,j)) * idx &
+              - speed_y * (a_m3*ua(i,j-3)+a_m2*ua(i,j-2)+a_m1*ua(i,j-1) &
+                          +a_p1*ua(i,j+1)+a_p2*ua(i,j+2)+a_p3*ua(i,j+3)) * idy
+enddo
+enddo
+end subroutine CD6
 
 !subroutine LELE(ua, res)
 !implicit none

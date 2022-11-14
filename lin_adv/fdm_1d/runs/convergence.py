@@ -18,8 +18,8 @@ os.system(command)
 lc = [50, 100, 200, 400, 800]
 for n in range(len(lc)):
    print('Running with Np = '+str(lc[n]))
-   #os.system('mpirun -n 2 '+exe+' -da_grid_x '+str(lc[n])+' -ts_type rk > out')
-   os.system(exe+' -da_grid_x '+str(lc[n])+' -ts_type ssp > out')
+   #os.system('mpirun -n 2 '+exe+' -da_grid_x '+str(lc[n])+' -ts_type ssp > out')
+   os.system(exe+' -da_grid_x '+str(lc[n])+' -ts_type rk -ts_rk_type 4 > out')
    os.system('tail -1 out >> error.dat')
 
 # read error from file
