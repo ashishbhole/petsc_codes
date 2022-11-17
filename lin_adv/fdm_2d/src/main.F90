@@ -30,7 +30,7 @@ integer            :: i, j
 PetscScalar, pointer :: u(:,:)
 type(tsdata)       :: ctx
 
-call PetscInitialize(PETSC_NULL_CHARACTER, ierr); CHKERRQ(ierr)
+call PetscInitialize('../test/param.in', ierr); CHKERRQ(ierr)
 if(ierr /= 0) stop "PETSc not intialized"
 
 call MPI_Comm_rank(PETSC_COMM_WORLD, rank, ierr); CHKERRQ(ierr)
@@ -46,11 +46,20 @@ if(rank == 0)then
    print*,'Number of processes: ', nproc
 endif
 
+call read_and_set_parameters()
+
 ! Creates an object that will manage the communication of one-dimensional regular array data
 ! that is distributed across some processors. 
-call DMDACreate2d(PETSC_COMM_WORLD, DM_BOUNDARY_PERIODIC, DM_BOUNDARY_PERIODIC, DMDA_STENCIL_STAR, &
-                  Nx, Ny, PETSC_DECIDE, PETSC_DECIDE, 1, stencil_width, &
-                  PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, da, ierr); CHKERRQ(ierr)
+if(stencil_type == 1)then
+  call DMDACreate2d(PETSC_COMM_WORLD, DM_BOUNDARY_PERIODIC, DM_BOUNDARY_PERIODIC, DMDA_STENCIL_STAR, Nx, Ny, PETSC_DECIDE, PETSC_DECIDE, 1, stencil_width, &
+                    PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, da, ierr); CHKERRQ(ierr)
+elseif(stencil_type == 2)then
+  call DMDACreate2d(PETSC_COMM_WORLD, DM_BOUNDARY_PERIODIC, DM_BOUNDARY_PERIODIC, DMDA_STENCIL_BOX, Nx, Ny, PETSC_DECIDE, PETSC_DECIDE, 1, stencil_width, &
+                    PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, da, ierr); CHKERRQ(ierr)        
+else
+  write(*,*) 'please select a stencil type: 1 or 2'
+  stop        
+endif
 call DMSetFromOptions(da, ierr); CHKERRQ(ierr)
 call DMSetUp(da, ierr); CHKERRQ(ierr)
 call DMCreateGlobalVector(da, ug, ierr); CHKERRQ(ierr)
@@ -59,12 +68,9 @@ call DMDAGetCorners(da, ibeg, jbeg, PETSC_NULL_INTEGER, &
                         Nx_loc, Ny_loc, PETSC_NULL_INTEGER, ierr); CHKERRQ(ierr)
 call DMDASetUniformCoordinates(da, xmin, xmax, ymin, ymax, 0.d0, 0.d0, ierr); CHKERRQ(ierr)
 ! This is used to control no of grid points from command line
-call DMDAGetInfo(da, PETSC_NULL_INTEGER, Nx, Ny, PETSC_NULL_INTEGER, &
-        PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, &
-        PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, &
-        PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, ierr); CHKERRQ(ierr)
-call DMDAGetGhostCorners(da, ibeg_ghosted, jbeg_ghosted, PETSC_NULL_INTEGER, &
-                             Nx_loc_ghosted, Ny_loc_ghosted, PETSC_NULL_INTEGER, ierr); CHKERRQ(ierr)
+call DMDAGetInfo(da, PETSC_NULL_INTEGER, Nx, Ny, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, &
+                 PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, ierr); CHKERRQ(ierr)
+call DMDAGetGhostCorners(da, ibeg_ghosted, jbeg_ghosted, PETSC_NULL_INTEGER, Nx_loc_ghosted, Ny_loc_ghosted, PETSC_NULL_INTEGER, ierr); CHKERRQ(ierr)
 ist = ibeg ; ien = ibeg+Nx_loc-1
 jst = jbeg ; jen = jbeg+Ny_loc-1
 gist = ibeg_ghosted ; gien = ibeg_ghosted+Nx_loc_ghosted-1
