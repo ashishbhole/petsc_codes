@@ -1,9 +1,9 @@
 .SUFFIXES:
 FC      = mpif90
 GIT_VERSION = $(shell git describe --abbrev=8 --dirty --always)
-FFLAGS  = -O3 -I$(PETSC_DIR)/include \
+FFLAGS  = -O3 -ffree-line-length-none -I$(PETSC_DIR)/include \
 		-DVERSION=\"$(GIT_VERSION)\"
-LDFLAGS = -lpetsc -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -L/usr/lib64
+LDFLAGS = -lpetsc -L$(PETSC_DIR)/lib -L/usr/lib64
 
 SRC  = $(wildcard *.F90)
 OBJ  = $(patsubst %.F90,%.o,$(SRC))

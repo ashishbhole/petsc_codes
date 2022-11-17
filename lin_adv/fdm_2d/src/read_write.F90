@@ -21,15 +21,11 @@ PetscScalar, pointer :: ua(:,:)
 integer       :: i, j
 PetscViewer    viewer;
 
-call TSGetDM(ts, da, ierr)
-CHKERRQ(ierr)
+call TSGetDM(ts, da, ierr); CHKERRQ(ierr)
 call DMGetLocalVector(da, ul, ierr); CHKERRQ(ierr)
-call DMGlobalToLocalBegin(da, ug, INSERT_VALUES, ul, ierr)
-CHKERRQ(ierr)
-call DMGlobalToLocalEnd(da, ug, INSERT_VALUES, ul, ierr)
-CHKERRQ(ierr)
+call DMGlobalToLocalBegin(da, ug, INSERT_VALUES, ul, ierr); CHKERRQ(ierr)
+call DMGlobalToLocalEnd(da, ug, INSERT_VALUES, ul, ierr); CHKERRQ(ierr)
 call DMDAVecGetArrayF90(da, ul, ua, ierr); CHKERRQ(ierr)
-!call MPI_Comm_rank(PETSC_COMM_WORLD, rank, ierr); CHKERRQ(ierr)
 write(filename, '(a,i3.3,a,i3.3,a)') 'solution_', rank, '_', iter, '.plt'
 open(10,file=trim(filename))
 write(10,*) "TITLE = solution"
@@ -44,7 +40,6 @@ enddo
 close(10)
 call DMDAVecRestoreArrayF90(da, ul, ua, ierr); CHKERRQ(ierr)
 call DMRestoreLocalVector(da, ul, ierr); CHKERRQ(ierr)
-
 call VecDestroy(ul,ierr); CHKERRQ(ierr)
 
 end subroutine save_solution
@@ -58,10 +53,10 @@ PetscViewer    viewer;
 character(30) :: filename
 
 write(filename, '(a)') 'solution.h5'
-call PetscViewerHDF5Open(PETSC_COMM_WORLD, filename, FILE_MODE_WRITE, viewer, ierr)
-CHKERRQ(ierr)
+call PetscViewerHDF5Open(PETSC_COMM_WORLD, filename, FILE_MODE_WRITE, viewer, ierr); CHKERRQ(ierr)
 call VecView(ug, viewer, ierr); CHKERRQ(ierr)
-call PetscViewerDestroy(viewer, ierr); CHKERRQ(ierr);
+call PetscViewerDestroy(viewer, ierr); CHKERRQ(ierr)
+
 end subroutine save_solution_hdf5
 
 end module read_write

@@ -86,10 +86,8 @@ a_p3 = - a_m3
 idx = 1.d0/dx; idy = 1.d0/dy
 do j = jst, jen
 do i = ist, ien
-   res(i,j) = - speed_x * (a_m3*ua(i-3,j)+a_m2*ua(i-2,j)+a_m1*ua(i-1,j) &
-                          +a_p1*ua(i+1,j)+a_p2*ua(i+2,j)+a_p3*ua(i+3,j)) * idx &
-              - speed_y * (a_m3*ua(i,j-3)+a_m2*ua(i,j-2)+a_m1*ua(i,j-1) &
-                          +a_p1*ua(i,j+1)+a_p2*ua(i,j+2)+a_p3*ua(i,j+3)) * idy
+   res(i,j) = - speed_x * (a_m3*ua(i-3,j)+a_m2*ua(i-2,j)+a_m1*ua(i-1,j)+a_p1*ua(i+1,j)+a_p2*ua(i+2,j)+a_p3*ua(i+3,j)) * idx &
+              - speed_y * (a_m3*ua(i,j-3)+a_m2*ua(i,j-2)+a_m1*ua(i,j-1)+a_p1*ua(i,j+1)+a_p2*ua(i,j+2)+a_p3*ua(i,j+3)) * idy
 enddo
 enddo
 end subroutine CD6

@@ -30,14 +30,11 @@ integer            :: i, j
 PetscScalar, pointer :: u(:,:)
 type(tsdata)       :: ctx
 
-call PetscInitialize(PETSC_NULL_CHARACTER, ierr) 
-CHKERRQ(ierr)
+call PetscInitialize(PETSC_NULL_CHARACTER, ierr); CHKERRQ(ierr)
 if(ierr /= 0) stop "PETSc not intialized"
 
-call MPI_Comm_rank(PETSC_COMM_WORLD, rank, ierr)
-CHKERRQ(ierr)
-call MPI_Comm_size(PETSC_COMM_WORLD, nproc, ierr)
-CHKERRQ(ierr)
+call MPI_Comm_rank(PETSC_COMM_WORLD, rank, ierr); CHKERRQ(ierr)
+call MPI_Comm_size(PETSC_COMM_WORLD, nproc, ierr); CHKERRQ(ierr)
 runtime = MPI_Wtime()
 fmt1 = "(1x, 'Date ', i2.2, '/', i2.2, '/', i4.4, '; time ', &
        & i2.2, ':', i2.2, ':', i2.2 )"
@@ -53,28 +50,21 @@ endif
 ! that is distributed across some processors. 
 call DMDACreate2d(PETSC_COMM_WORLD, DM_BOUNDARY_PERIODIC, DM_BOUNDARY_PERIODIC, DMDA_STENCIL_STAR, &
                   Nx, Ny, PETSC_DECIDE, PETSC_DECIDE, 1, stencil_width, &
-                  PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, da, ierr) 
-CHKERRQ(ierr)
-call DMSetFromOptions(da, ierr) 
-CHKERRQ(ierr)
+                  PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, da, ierr); CHKERRQ(ierr)
+call DMSetFromOptions(da, ierr); CHKERRQ(ierr)
 call DMSetUp(da, ierr); CHKERRQ(ierr)
-call DMCreateGlobalVector(da, ug, ierr)
-CHKERRQ(ierr)
+call DMCreateGlobalVector(da, ug, ierr); CHKERRQ(ierr)
 ! Returns the global (x,y,z) indices of the lower left corner and size of the local region, excluding ghost points.
 call DMDAGetCorners(da, ibeg, jbeg, PETSC_NULL_INTEGER, &
-                        Nx_loc, Ny_loc, PETSC_NULL_INTEGER, ierr)
-CHKERRQ(ierr)
-call DMDASetUniformCoordinates(da, xmin, xmax, ymin, ymax, 0.d0, 0.d0, ierr)
-CHKERRQ(ierr)
+                        Nx_loc, Ny_loc, PETSC_NULL_INTEGER, ierr); CHKERRQ(ierr)
+call DMDASetUniformCoordinates(da, xmin, xmax, ymin, ymax, 0.d0, 0.d0, ierr); CHKERRQ(ierr)
 ! This is used to control no of grid points from command line
 call DMDAGetInfo(da, PETSC_NULL_INTEGER, Nx, Ny, PETSC_NULL_INTEGER, &
         PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, &
         PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, &
-        PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, ierr)
-CHKERRQ(ierr)
+        PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, PETSC_NULL_INTEGER, ierr); CHKERRQ(ierr)
 call DMDAGetGhostCorners(da, ibeg_ghosted, jbeg_ghosted, PETSC_NULL_INTEGER, &
-                             Nx_loc_ghosted, Ny_loc_ghosted, PETSC_NULL_INTEGER, ierr)
-CHKERRQ(ierr)
+                             Nx_loc_ghosted, Ny_loc_ghosted, PETSC_NULL_INTEGER, ierr); CHKERRQ(ierr)
 ist = ibeg ; ien = ibeg+Nx_loc-1
 jst = jbeg ; jen = jbeg+Ny_loc-1
 gist = ibeg_ghosted ; gien = ibeg_ghosted+Nx_loc_ghosted-1
@@ -108,20 +98,17 @@ if(petsc_ts)then ! solve using PETSc time stepping
   ! by default: nonlinear problem
   call TSSetProblemType(ts, TS_NONLINEAR, ierr); CHKERRQ(ierr)
   ! in RHSfunction finite differencing in space takes place
-  call TSSetRHSFunction(ts, PETSC_NULL_VEC, RHSFunction, ctx, ierr)
-  CHKERRQ(ierr)
+  call TSSetRHSFunction(ts, PETSC_NULL_VEC, RHSFunction, ctx, ierr); CHKERRQ(ierr)
   call TSSetTime(ts, 0.d0, ierr); CHKERRQ(ierr)
   call TSSetTimeStep(ts, dt, ierr); CHKERRQ(ierr)
-  call TSSetType(ts, TSSSP, ierr); CHKERRQ(ierr);
-  call TSSetMaxTime(ts, final_time, ierr); CHKERRQ(ierr);
-  call TSSetMaxSteps(ts, itmax, ierr); CHKERRQ(ierr);
-  call TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP, ierr)
-  CHKERRQ(ierr)
+  call TSSetType(ts, TSSSP, ierr); CHKERRQ(ierr)
+  call TSSetMaxTime(ts, final_time, ierr); CHKERRQ(ierr)
+  call TSSetMaxSteps(ts, itmax, ierr); CHKERRQ(ierr)
+  call TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP, ierr); CHKERRQ(ierr)
   ! in Monitor function, time stepping may be computed, solution maybe monitored for norms
   ! and solution may be written in files
   call TSSetSolution(ts, ug, ierr); CHKERRQ(ierr)
-  call TSMonitorSet(ts, Monitor, ctx, PETSC_NULL_FUNCTION, ierr)
-  CHKERRQ(ierr)
+  call TSMonitorSet(ts, Monitor, ctx, PETSC_NULL_FUNCTION, ierr); CHKERRQ(ierr)
   ! enables the use of different PETSc implemented time integration methods from command line
   call TSGetType(ts, time_scheme, ierr); CHKERRQ(ierr)
   call TSSetFromOptions(ts, ierr); CHKERRQ(ierr)
@@ -129,7 +116,8 @@ if(petsc_ts)then ! solve using PETSc time stepping
   call TSSolve(ts, ug, ierr); CHKERRQ(ierr)
 
 else ! solve by implementing time integration methods
-!
+  print*, 'Time stepping yet to be implemented'
+  stop
 !  !call save_solution(iter, ctx)      
 !  !do while (time .lt. final_time)
 !  !  if (time + dt .gt. final_time) then
@@ -168,9 +156,9 @@ print*, sqrt(dx*dy), err_l2 * dsqrt(1.d0/(Nx*Ny))
 call VecDestroy(ue, ierr); CHKERRQ(ierr)
 call VecDestroy(ug, ierr); CHKERRQ(ierr)
 call DMDestroy(da, ierr); CHKERRQ(ierr)
-!if(petsc_ts)then
-!  call TSDestroy(ts, ierr); CHKERRQ(ierr)
-!endif
+if(petsc_ts)then
+  call TSDestroy(ts, ierr); CHKERRQ(ierr)
+endif
 call PetscFinalize(ierr); CHKERRQ(ierr)
 
 end program main

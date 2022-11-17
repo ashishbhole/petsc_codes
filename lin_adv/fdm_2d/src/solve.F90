@@ -12,7 +12,7 @@ use read_write
 implicit none
 contains
 
-! Compute rhs function in y' = r(t,y)
+! Compute rhs function in yg' = r(t,yg), where yg and r are global vectors
 subroutine RHSFunction(ts, time, yg, r, ctx, ierr)
 #include <petsc/finclude/petscts.h>
 #include <petsc/finclude/petscdmda.h>
@@ -29,29 +29,18 @@ Vec            :: localU
 PetscErrorCode :: ierr
 PetscScalar, pointer :: u(:,:), res(:,:)
 
-call TSGetDM(ts, da, ierr)
-CHKERRQ(ierr)
-call DMGetLocalVector(da, localU, ierr)
-CHKERRQ(ierr)
-call DMGlobalToLocalBegin(da, yg, INSERT_VALUES, localU, ierr)
-CHKERRQ(ierr)
-call DMGlobalToLocalEnd(da, yg, INSERT_VALUES, localU, ierr)
-CHKERRQ(ierr)
-call DMDAVecGetArrayReadF90(da, localU, u, ierr)
-CHKERRQ(ierr)
-call DMDAVecGetArrayF90(da, r, res, ierr)
-CHKERRQ(ierr)
+call TSGetDM(ts, da, ierr); CHKERRQ(ierr)
+call DMGetLocalVector(da, localU, ierr); CHKERRQ(ierr)
+call DMGlobalToLocalBegin(da, yg, INSERT_VALUES, localU, ierr); CHKERRQ(ierr)
+call DMGlobalToLocalEnd(da, yg, INSERT_VALUES, localU, ierr); CHKERRQ(ierr)
+call DMDAVecGetArrayReadF90(da, localU, u, ierr); CHKERRQ(ierr)
+call DMDAVecGetArrayF90(da, r, res, ierr); CHKERRQ(ierr)
 call finite_diffence_method(u(gist:gien,gjst:gjen), res(ist:ien,jst:jen))
-call DMDAVecRestoreArrayReadF90(da, localU, u, ierr)
-CHKERRQ(ierr)
-call DMDAVecRestoreArrayF90(da, r, res, ierr)
-CHKERRQ(ierr)
-call DMRestoreLocalVector(da, localU ,ierr)
-CHKERRQ(ierr)
+call DMDAVecRestoreArrayReadF90(da, localU, u, ierr); CHKERRQ(ierr)
+call DMDAVecRestoreArrayF90(da, r, res, ierr); CHKERRQ(ierr)
+call DMRestoreLocalVector(da, localU ,ierr); CHKERRQ(ierr)
 end subroutine RHSFunction
 
-! This subroutine is called after every time step
-! Note: This function seems to be called before time stepping starts.
 subroutine Monitor(ts, step, time, u, ctx, ierr)
 use petscts
 implicit none
