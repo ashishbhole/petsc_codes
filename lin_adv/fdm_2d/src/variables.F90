@@ -35,7 +35,7 @@ implicit none
 
   PetscInt           :: Nx = 100, Ny = 100
   PetscReal          :: dx, dy, xmin=0.d0, xmax=1.d0, ymin=0.d0, ymax=1.d0
-  PetscReal          :: dt, cfl, time=0.d0, final_time=2.d0
+  PetscReal          :: dt, cfl, time=0.d0, final_time
   PetscInt           :: ibeg, jbeg, Nx_loc, Ny_loc
   PetscInt           :: ibeg_ghosted, Nx_loc_ghosted
   PetscInt           :: jbeg_ghosted, Ny_loc_ghosted

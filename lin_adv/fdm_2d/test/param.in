@@ -1,0 +1,7 @@
+-petscts  1
+-cfl      0.5
+-space_disc CD4
+-tfinal   0.15
+-itmax    10000
+-itsave   10
+-igridformat 1

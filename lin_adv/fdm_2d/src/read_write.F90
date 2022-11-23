@@ -72,8 +72,8 @@ subroutine get_and_set_parameters()
   cfl = 0.5d0 ! Default cfl number
   call PetscOptionsGetReal(PETSC_NULL_OPTIONS,PETSC_NULL_CHARACTER,'-cfl',cfl,set,ierr); CHKERRQ(ierr)
   
-  !dt = 0.d0 ! Default time step
-  !call PetscOptionsGetReal(PETSC_NULL_OPTIONS,PETSC_NULL_CHARACTER,'-dt',dt,set,ierr); CHKERRQ(ierr)
+  final_time = 1.d0 ! Default final time
+  call PetscOptionsGetReal(PETSC_NULL_OPTIONS,PETSC_NULL_CHARACTER,'-tfinal',final_time,set,ierr); CHKERRQ(ierr)
   
    space_disc = 'CD4' ! Default: CD4. Options: CD2, CD4, CD6, LELE
    call PetscOptionsGetString(PETSC_NULL_OPTIONS,PETSC_NULL_CHARACTER,'-space_disc',space_disc,set,ierr); CHKERRQ(ierr)
