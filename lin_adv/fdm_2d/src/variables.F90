@@ -9,46 +9,46 @@ use petscdm
 use petscdmda
 use petscvec
 use petscts
+use double
+implicit none
 
-   use double
-   implicit none
+  ! constants
+  real(dp)           :: pi = 4.d0*atan(1.d0), eps = 1.d-12
+  PetscInt           :: one = 1, zero = 0
 
-   real(dp) :: pi = 4.d0*atan(1.d0), eps = 1.d-12, tolerance
-   PetscReal      :: pp
+  PetscErrorCode     :: ierr
+  PetscInt           :: rank, nproc
+  
+  DM                 :: da
+  TS                 :: ts
+  Vec                :: ug, ue
+  TSType             :: time_scheme
 
-   PetscErrorCode     :: ierr
-   PetscInt           :: rank, nproc, one = 1, zero = 0
-   PetscReal          :: speed_x, speed_y
+  ! auxillary condition
+  PetscReal          :: speed_x = 1.d0, speed_y = 1.d0
+  real(dp)           :: amplitude = 1.d0, alpha = 64.d0, x_0 = 0.5d0, y_0= 0.5d0
+  
+  logical            :: petsc_ts
+  character*64       :: space_disc
+  integer            :: stencil_type         ! 1 for star, 2 for box
+  PetscInt           :: stencil_width = 20
 
-   DM                 :: da
-   TS                 :: ts
-   Vec                :: ug, ue
-   
-   ! auxillary condition
-   real(dp) :: amplitude = 1.d0, alpha = 64.d0, x_0 = 0.5d0, y_0= 0.5d0
-   
-   TSType       :: time_scheme   
-   logical      :: petsc_ts = .true.
-   character*64 :: space_disc = 'LELE'
-   integer      :: stencil_type ! 1 for star, 2 for box
-   PetscInt     :: stencil_width = 20
-   integer      :: nrk
-   real(dp)     :: ark(3)
-   PetscInt     :: Nx = 100, Ny = 100
-   PetscReal    :: dx, dy, xmin=0.d0, xmax=1.d0, ymin=0.d0, ymax=1.d0
-   integer      :: iter, itmax=100, itsave=10
-   PetscReal    :: dt, cfl, time, final_time=2.0d0
-   PetscInt     :: ibeg, jbeg, Nx_loc, Ny_loc
-   PetscInt     :: ibeg_ghosted, Nx_loc_ghosted
-   PetscInt     :: jbeg_ghosted, Ny_loc_ghosted
-   integer      :: ist, ien, gist, gien ! gist : ghosted ist and so on
-   integer      :: jst, jen, gjst, gjen
-   real(dp)     :: err_l2
-   integer      :: igridformat, iascii = 1, ihdf5 = 2
+  PetscInt           :: Nx = 100, Ny = 100
+  PetscReal          :: dx, dy, xmin=0.d0, xmax=1.d0, ymin=0.d0, ymax=1.d0
+  PetscReal          :: dt, cfl, time=0.d0, final_time=2.d0
+  PetscInt           :: ibeg, jbeg, Nx_loc, Ny_loc
+  PetscInt           :: ibeg_ghosted, Nx_loc_ghosted
+  PetscInt           :: jbeg_ghosted, Ny_loc_ghosted
+  integer            :: ist, ien, gist, gien ! gist : ghosted ist and so on
+  integer            :: jst, jen, gjst, gjen
 
-   ! if required, construct a user defined data type here
-   type tsdata
-      real(dp)  :: dummy
-   end type tsdata
+  real(dp)           :: err_l2
+  integer            :: iter, itmax=100, itsave=10
+  integer            :: igridformat, iascii = 1, ihdf5 = 2
+  
+  ! if required, construct a user defined data type here
+  type tsdata
+     real(dp)        :: dummy
+  end type tsdata
 
 end module variables
